@@ -37,6 +37,9 @@ namespace ASFGenerator
 
             if (!File.Exists(steam)) { Console.WriteLine("steam.xlsx not found!"); Console.ReadLine(); return; }
 
+            string tedonstore = "Powered by tedonstore.com";
+            Console.WriteLine(String.Format("{0," + ((Console.WindowWidth / 2) + (tedonstore.Length / 2)) + "}", tedonstore));
+
             string result = string.Empty;
 
             Dictionary<string, string> language = new Dictionary<string, string>();
