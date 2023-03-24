@@ -103,6 +103,7 @@ namespace ASFGenerator
                     writer.WriteLine("}");
                 }
 
+                //Mb linq?
                 foreach (var file in Directory.GetFiles(mafiles))
                 {
                     string fileText = File.ReadAllText(file);
