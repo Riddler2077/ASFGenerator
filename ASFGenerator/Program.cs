@@ -1,8 +1,11 @@
 ﻿using OfficeOpenXml;
+using OfficeOpenXml.Table;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -33,29 +36,42 @@ namespace ASFGenerator
 
             if (!File.Exists(steam)) { Console.WriteLine("steam.xlsx not found!"); Console.ReadLine(); return; }
 
-            Console.Write("Enter game for idle (default 730):");
-            string result = Console.ReadLine();
+            string result = string.Empty;
+
+            Dictionary<string, string> language = new Dictionary<string, string>();
+
+            Console.Write("Select language (default EN):");
+            result = Console.ReadLine();
+            if (result.ToLower().StartsWith("en") || string.IsNullOrEmpty(result) || string.IsNullOrWhiteSpace(result)) language = english;
+            else language = russian;
+
+            Console.Write(language["gameForIdle"]);
+            result = Console.ReadLine();
             if (!Int32.TryParse(result, out idleGame)) idleGame = 730;
 
-            Console.Write("Enter row SKIP number (skip headers):");
+            Console.Write(language["skipHeaders"]);
+            Console.SetCursorPosition(language["skipHeaders"].Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries)[0].Length, (Console.CursorTop - 1));
             result = Console.ReadLine();
             if (!Int32.TryParse(result, out rowskip)) rowskip = 0;
+            ClearNote(language["skipHeaders"]);
 
-            Console.Write("Enter name column number:");
+            Console.Write(language["columnName"]);
+            Console.SetCursorPosition(language["columnName"].Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries)[0].Length, (Console.CursorTop - 1));
             result = Console.ReadLine();
             if (!Int32.TryParse(result, out name)) name = 999999999;
+            ClearNote(language["columnName"]);
 
-            Console.Write("Enter login column number:");
+            Console.Write(language["columnLogin"]);
             result = Console.ReadLine();
-            if (!Int32.TryParse(result, out login)) login = 2;
+            if (!Int32.TryParse(result, out login)) login = 1;
 
-            Console.Write("Enter password column number:");
+            Console.Write(language["columnPassword"]);
             result = Console.ReadLine();
-            if (!Int32.TryParse(result, out password)) password = 3;
+            if (!Int32.TryParse(result, out password)) password = 2;
 
-            Console.Write("Enter token column number:");
+            Console.Write(language["columnToken"]);
             result = Console.ReadLine();
-            if (!Int32.TryParse(result, out token)) token = 4;
+            if (!Int32.TryParse(result, out token)) token = 3;
 
             if (name == 999999999) name = login;
 
@@ -96,11 +112,39 @@ namespace ASFGenerator
                     }
                 }
             }
-
+            
             Console.ReadLine();
         }
 
-        static List<Model> ReadFromExcel(string FilePath)
+        private static void ClearNote(string note) 
+        {
+            Console.SetCursorPosition(note.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries)[1].Length, Console.CursorTop);
+            do { Console.Write("\b \b"); } while (Console.CursorLeft > 0);
+        }
+
+        private static Dictionary<string, string> english = new Dictionary<string, string>
+            {
+                {"gameForIdle", "Enter the game number for idle (default 730):"},
+                {"skipHeaders", String.Format("How many lines need to skip from the top (default 0):{0}Note: value to skip headers. If there are no headers - leave input is empty", Environment.NewLine) },
+                {"columnName", String.Format("Enter the number of the column with nicknames:{0}Note: leave the input blank if you want the nickname to be the same as the login", Environment.NewLine) },
+                {"columnLogin", "Enter the number of the column with logins (default 1):" },
+                {"columnPassword", "Enter the number of the column with passwords (default 2):" },
+                {"columnToken", "Enter the number of the column with tokens (default 3):" }
+            };
+
+        private static Dictionary<string, string> russian = new Dictionary<string, string>
+            {
+                {"gameForIdle", "Введите номер игры для фарма часов (по умолчанию 730):"},
+                {"skipHeaders", String.Format("Сколько строк нужно отступить сверху (по умолчанию 0):{0}Подсказка: значение отступа для пропуска заголовков. Если заголовков нет - оставьте строку пустой", Environment.NewLine) },
+                {"columnName", String.Format("Введите номер столбца с никами:{0}Подсказка: оставьте ввод пустым если хотите чтобы ник был таким же как и логин", Environment.NewLine) },
+                {"columnLogin", "Введите номер столбца с логинами (по умолчанию 1):" },
+                {"columnPassword", "Введите номер столбца с паролями (по умолчанию 2):" },
+                {"columnToken", "Введите номер столбца с токенами (по умолчанию 3):" }
+
+            };
+
+        #region ReadFromExcel
+        private static List<Model> ReadFromExcel(string FilePath)
         {
             // If you use EPPlus in a noncommercial context
             // according to the Polyform Noncommercial license:
@@ -137,5 +181,7 @@ namespace ASFGenerator
                 return list;
             }
         }
+
+        #endregion
     }
 }
