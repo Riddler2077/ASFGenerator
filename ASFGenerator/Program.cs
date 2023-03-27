@@ -92,7 +92,7 @@ namespace ASFGenerator
 
             Console.Write(language["IPCPort"]);
             result = Console.ReadLine();
-            if (!Int32.TryParse(result, out idleGame)) IPCPort = 1242;
+            if (!Int32.TryParse(result, out IPCPort)) IPCPort = 1242;
 
             GenerateMainConfig();
 
@@ -192,7 +192,22 @@ namespace ASFGenerator
                 writer.WriteLine("  ]");
                 writer.WriteLine("}");
             }
-            Console.WriteLine("Main config successfully created. Written to {0}", filename);
+            Console.WriteLine("Main config successfully created.{0}Written to {1}", Environment.NewLine, filename);
+
+            filename = String.Format("{0}\\IPC.config", config);
+            using (var writer = new StreamWriter(filename, false))
+            {
+                writer.WriteLine("{");
+                writer.WriteLine("\t\"Kestrel\": {");
+                writer.WriteLine("\t\t\"Endpoints\": {");
+                writer.WriteLine("\t\t\t\"HTTP\": {");
+                writer.WriteLine("\t\t\t\t\"Url\": \"http://*:" + IPCPort + "\"");
+                writer.WriteLine("\t\t\t}");
+                writer.WriteLine("\t\t}");
+                writer.WriteLine("\t}");
+                writer.WriteLine("}");
+            }
+            Console.WriteLine("IPC config successfully created.");
         }
 
         private static Dictionary<string, string> english = new Dictionary<string, string>
