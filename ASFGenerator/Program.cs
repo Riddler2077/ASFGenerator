@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media.Media3D;
 
@@ -29,6 +30,10 @@ namespace ASFGenerator
         static int token = 0;
         static int idleGame = 730;
 
+        static string SteamOwnerID = string.Empty;
+        static string IPCPassword = "tedonstore";
+        static int IPCPort = 1242;
+
         static void Main(string[] args)
         {
             if (!Directory.Exists(mafiles)) Directory.CreateDirectory(mafiles);
@@ -47,8 +52,49 @@ namespace ASFGenerator
             Console.Write("Select language (default EN):");
             result = Console.ReadLine();
             if (result.ToLower().StartsWith("en") || string.IsNullOrEmpty(result) || string.IsNullOrWhiteSpace(result)) language = english;
-            else if(result.ToLower().StartsWith("ru")) language = russian;
+            else if (result.ToLower().StartsWith("ru")) language = russian;
             else language = english;
+
+            Console.Write(language["steamOwnerID"]);
+            while (true)
+            {
+                result = Console.ReadLine();
+                if (!string.IsNullOrEmpty(result) || !string.IsNullOrWhiteSpace(result))
+                {
+                    if (result.StartsWith("765") && result.Length == 17) { SteamOwnerID = result; break; }
+                    else
+                    {
+                        Console.SetCursorPosition((language["steamOwnerID"].Length + result.Length), (Console.CursorTop - 1));
+                        do { Console.Write("\b \b"); } while (Console.CursorLeft > language["steamOwnerID"].Length);
+                    }
+                }
+                else
+                {
+                    Console.SetCursorPosition(language["steamOwnerID"].Length, (Console.CursorTop - 1));
+                }
+            }
+
+            Console.Write(language["IPCPassword"]);
+            while (true)
+            {
+                result = Console.ReadLine();
+                if (result.Length < 4)
+                {
+                    if (!string.IsNullOrEmpty(result) || !string.IsNullOrWhiteSpace(result))
+                    {
+                        Console.SetCursorPosition((language["IPCPassword"].Length + result.Length + 1), (Console.CursorTop - 1));
+                        do { Console.Write("\b \b"); } while (Console.CursorLeft > language["IPCPassword"].Length);
+                    }
+                    else break;
+                }
+                else { IPCPassword = result; break; }
+            }
+
+            Console.Write(language["IPCPort"]);
+            result = Console.ReadLine();
+            if (!Int32.TryParse(result, out idleGame)) IPCPort = 1242;
+
+            GenerateMainConfig();
 
             Console.Write(language["gameForIdle"]);
             result = Console.ReadLine();
@@ -98,6 +144,7 @@ namespace ASFGenerator
                     writer.WriteLine("    " + idleGame.ToString());
                     writer.WriteLine("  ],");
                     writer.WriteLine("  \"RedeemingPreferences\": 7,");
+                    writer.WriteLine("  \"RemoteCommunication\": 0,");
                     writer.WriteLine("  \"SendOnFarmingFinished\": true,");
                     writer.WriteLine("  \"SteamLogin\": \"" + account.login + "\",");
                     writer.WriteLine("  \"SteamPassword\": \"" + account.password + "\",");
@@ -120,19 +167,40 @@ namespace ASFGenerator
                     }
                 }
             }
-            
+
             Console.ReadLine();
         }
 
-        private static void ClearNote(string note) 
+        private static void ClearNote(string note)
         {
             Console.SetCursorPosition(note.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries)[1].Length, Console.CursorTop);
             do { Console.Write("\b \b"); } while (Console.CursorLeft > 0);
         }
 
+        private static void GenerateMainConfig()
+        {
+            string filename = String.Format("{0}\\ASF.json", config);
+            using (var writer = new StreamWriter(filename, false))
+            {
+                writer.WriteLine("{");
+                writer.WriteLine("  \"IPCPassword\": \"" + IPCPassword + "\",");
+                writer.WriteLine("  \"SteamOwnerID\": " + SteamOwnerID + ",");
+                writer.WriteLine("  \"SteamTokenDumperPluginEnabled\": false,");
+                writer.WriteLine("  \"ItemsMatcherPluginEnabled\": false,");
+                writer.WriteLine("  \"IPCPrefixes\": [");
+                writer.WriteLine("    " + "\"http://*:" + IPCPort + "/\"");
+                writer.WriteLine("  ]");
+                writer.WriteLine("}");
+            }
+            Console.WriteLine("Main config successfully created. Written to {0}", filename);
+        }
+
         private static Dictionary<string, string> english = new Dictionary<string, string>
         {
             {"language", "en" },
+            {"steamOwnerID", "Please enter the steam id of the master account:" },
+            {"IPCPassword", "Please enter the password for IPC Server (default tedonstore):" },
+            {"IPCPort", "Please enter port for IPC Server (default 1242):" },
             {"gameForIdle", "Enter the game number for idle (default 730):"},
             {"skipHeaders", String.Format("How many lines need to skip from the top (default 1):{0}Note: value to skip headers. If there are no headers - leave input is empty", Environment.NewLine) },
             {"columnName", String.Format("Enter the number of the column with nicknames:{0}Note: leave the input blank if you want the nickname to be the same as the login", Environment.NewLine) },
@@ -144,6 +212,9 @@ namespace ASFGenerator
         private static Dictionary<string, string> russian = new Dictionary<string, string>
         {
             {"language", "ru" },
+            {"steamOwnerID", "Пожалуйста, введите steam id основной учетной записи:" },
+            {"IPCPassword", "Пожалуйста введите пароль для IPC Server (по умолчанию tedonstore):" },
+            {"IPCPort", "Пожалуйста введите порт для IPC Server (по умолчанию 1242):" },
             {"gameForIdle", "Введите номер игры для фарма часов (по умолчанию 730):"},
             {"skipHeaders", String.Format("Сколько строк нужно отступить сверху (по умолчанию 1):{0}Подсказка: значение отступа для пропуска заголовков. Если заголовков нет - оставьте строку пустой", Environment.NewLine) },
             {"columnName", String.Format("Введите номер столбца с никами:{0}Подсказка: оставьте ввод пустым если хотите чтобы ник был таким же как и логин", Environment.NewLine) },
@@ -169,7 +240,7 @@ namespace ASFGenerator
 
                 List<Model> list = new List<Model>();
 
-                for (int r = rowskip; r < (rowCount + 1); r++) 
+                for (int r = rowskip; r < (rowCount + 1); r++)
                 {
                     Model model = new Model();
                     try
